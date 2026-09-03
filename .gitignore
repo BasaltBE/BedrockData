@@ -2,5 +2,4 @@
 .temp
 .vscode
 node_modules
-src/actions/generate-block-types.ts
 bun.lock
