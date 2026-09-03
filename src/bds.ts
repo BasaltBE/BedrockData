@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 
 import { DownloadAction } from "./actions/bds-download";
 import { GenerateDocsAction } from "./actions/generate-docs";
+import { GenerateBlockDropsAction } from "./actions/generate-block-drops";
 import { GenerateBlockTypesAction } from "./actions/generate-block-types";
 import { GenerateEntityTypesAction } from "./actions/generate-entity-types";
 import { GenerateEntityDropsAction } from "./actions/generate-entity-drops";
@@ -16,6 +17,7 @@ class Bds extends BdsEvents {
 		download: DownloadAction;
 		prepare: PrepareServerAction;
 		generateDocs: GenerateDocsAction;
+		generateBlockDrops: GenerateBlockDropsAction;
 		generateBlockTypes: GenerateBlockTypesAction;
 		generateEntityTypes: GenerateEntityTypesAction;
 		generateEntityDrops: GenerateEntityDropsAction;
@@ -46,6 +48,7 @@ class Bds extends BdsEvents {
 				resolve(resourcesPath, "behavior-pack"),
 			),
 			generateDocs: new GenerateDocsAction(this.serverPath),
+			generateBlockDrops: new GenerateBlockDropsAction(this.serverPath),
 			generateBlockTypes: new GenerateBlockTypesAction(
 				dataPath,
 				resolve(outputPath, "block-types.json"),

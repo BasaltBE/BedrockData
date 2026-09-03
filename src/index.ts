@@ -10,6 +10,7 @@ const bds = new Bds(resolve(temporaryPath, "server"));
 const cloudburst = new CloudburstAction(resolve(temporaryPath, "data"));
 const preview = process.argv.includes("--preview");
 const server = await startServer(resolve(temporaryPath, "output"));
+let serverClosed = false;
 
 bds.on("downloadStarted", (isPreview) => {
 	console.log(
@@ -26,6 +27,31 @@ try {
 	await bds.actions.prepare.run();
 	console.log("Generating BDS documentation...");
 	await bds.actions.generateDocs.run();
+	await new Promise<void>((resolveServer, rejectServer) =>
+		server.close((error) =>
+			error ? rejectServer(error) : resolveServer(),
+		),
+	);
+	serverClosed = true;
+	let resolveDrops: (() => void) | undefined;
+	const dropsReady = new Promise<void>((resolveReady) => {
+		resolveDrops = resolveReady;
+	});
+	const dropServer = await startServer(
+		resolve(temporaryPath, "output"),
+		18080,
+		true,
+		() => resolveDrops?.(),
+	);
+	try {
+		await bds.actions.generateBlockDrops.run(dropsReady);
+	} finally {
+		await new Promise<void>((resolveServer, rejectServer) =>
+			dropServer.close((error) =>
+				error ? rejectServer(error) : resolveServer(),
+			),
+		);
+	}
 	await cloudburst.run();
 	await mkdir(resolve(temporaryPath, "output"), { recursive: true });
 	await copyFile(
@@ -39,5 +65,5 @@ try {
 	await bds.actions.generateTreeTypes.run();
 	await bds.actions.generateItemTypes.run();
 } finally {
-	server.close();
+	if (!serverClosed) server.close();
 }
