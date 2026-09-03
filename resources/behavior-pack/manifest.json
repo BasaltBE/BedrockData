@@ -1,0 +1,36 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "bedrock-data-dumper-tags",
+    "description": "Reads Bedrock block and item tags.",
+    "uuid": "d0c8cc19-9c51-4b9c-b2ae-cf39cfecf4a0",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 20, 40]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "description": "data",
+      "uuid": "b0b8fa87-3f2e-447d-9c82-67fa0b21d9dd",
+      "version": [1, 0, 0]
+    },
+    {
+      "type": "script",
+      "description": "script",
+      "uuid": "f0c4cd22-3e23-4b9b-bc9c-1d1d4df8de7e",
+      "version": [1, 0, 0],
+      "language": "javascript",
+      "entry": "scripts/index.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.9.0"
+    },
+    {
+      "module_name": "@minecraft/server-net",
+      "version": "1.0.0-beta"
+    }
+  ]
+}
