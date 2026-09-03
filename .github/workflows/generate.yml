@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: generate-bedrock-data
   cancel-in-progress: true
@@ -43,3 +46,12 @@ jobs:
           name: bedrock-data
           path: bedrock-data.zip
           if-no-files-found: error
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: bedrock-data-${{ github.run_number }}
+          name: Bedrock data ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: bedrock-data.zip
