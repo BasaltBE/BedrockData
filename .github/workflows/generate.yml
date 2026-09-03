@@ -1,0 +1,45 @@
+name: Generate Bedrock data
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: generate-bedrock-data
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+
+      - name: Install dependencies
+        run: bun install --no-progress
+
+      - name: Check TypeScript
+        run: bun run check
+
+      - name: Generate data
+        run: bun run start
+
+      - name: Create output archive
+        shell: pwsh
+        run: Compress-Archive -Path (Get-ChildItem -Path .temp/output -Force).FullName -DestinationPath bedrock-data.zip
+
+      - name: Upload generated data archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: bedrock-data
+          path: bedrock-data.zip
+          if-no-files-found: error
