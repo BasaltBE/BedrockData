@@ -70,6 +70,7 @@ class Bds extends BdsEvents {
 			generateItemTypes: new GenerateItemTypesAction(
 				dataPath,
 				resolve(outputPath, "item-types.json"),
+				this.serverPath,
 			),
 		};
 	}

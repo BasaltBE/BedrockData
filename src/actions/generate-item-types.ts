@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import nbt from "prismarine-nbt";
@@ -24,6 +24,126 @@ type ItemMappings = {
 	simple: Record<string, string>;
 	complex: Record<string, Record<string, string>>;
 };
+
+type ItemCatalogEntry = {
+	categoryName: string;
+	group_identifier: {
+		icon?: string;
+		name?: string;
+	};
+};
+
+type ItemCatalog = {
+	"minecraft:crafting_items_catalog"?: {
+		categories?: Array<{
+			category_name: string;
+			groups?: Array<{
+				group_identifier?: ItemCatalogEntry["group_identifier"];
+				items?: string[];
+			}>;
+		}>;
+	};
+};
+
+type CreativeItems = {
+	groups?: Array<{
+		name?: string;
+		category?: string;
+		icon?: { id?: string };
+	}>;
+	items?: Array<{
+		id?: string;
+		groupId?: number;
+	}>;
+};
+
+type CatalogData = {
+	entries: Map<string, ItemCatalogEntry>;
+	order: Map<string, number>;
+};
+
+async function readCatalogData(
+	serverPath: string,
+	dataPath: string,
+): Promise<CatalogData> {
+	const entries = new Map<string, ItemCatalogEntry>();
+	const order = new Map<string, number>();
+	const packsPath = resolve(serverPath, "behavior_packs");
+	let packNames: string[];
+
+	try {
+		packNames = await readdir(packsPath);
+	} catch {
+		packNames = [];
+	}
+
+	const orderedPacks = [
+		...packNames.filter((name) => name.startsWith("vanilla")).sort(),
+		...packNames.filter((name) => !name.startsWith("vanilla")).sort(),
+	];
+	let index = 0;
+
+	for (const packName of orderedPacks) {
+		const catalogPath = resolve(
+			packsPath,
+			packName,
+			"item_catalog",
+			"crafting_item_catalog.json",
+		);
+		let catalog: ItemCatalog;
+
+		try {
+			catalog = JSON.parse(await readFile(catalogPath, "utf8")) as ItemCatalog;
+		} catch {
+			continue;
+		}
+
+		for (const category of catalog["minecraft:crafting_items_catalog"]
+			?.categories ?? []) {
+			for (const group of category.groups ?? []) {
+				for (const rawItem of group.items ?? []) {
+					const identifier = rawItem.replace(/:\d+$/, "");
+					if (!entries.has(identifier)) {
+						entries.set(identifier, {
+							categoryName: category.category_name,
+							group_identifier: group.group_identifier ?? {},
+						});
+					}
+					if (!order.has(identifier)) order.set(identifier, index++);
+				}
+			}
+		}
+	}
+
+	try {
+		const creative = JSON.parse(
+			await readFile(resolve(dataPath, "creative_items.json"), "utf8"),
+		) as CreativeItems;
+		const creativeOrderStart = order.size;
+
+		for (const [index, item] of (creative.items ?? []).entries()) {
+			if (!item.id || item.groupId === undefined) continue;
+
+			const group = creative.groups?.[item.groupId];
+			if (!group?.category) continue;
+
+			const identifier = item.id.replace(/:\d+$/, "");
+			if (!entries.has(identifier)) {
+				entries.set(identifier, {
+					categoryName: group.category,
+					group_identifier: {
+						...(group.icon?.id ? { icon: group.icon.id } : {}),
+						...(group.name ? { name: group.name } : {}),
+					},
+				});
+			}
+			if (!order.has(identifier))
+				order.set(identifier, creativeOrderStart + index);
+		}
+	} catch {}
+
+	return { entries, order };
+}
 
 const bucketPlacers: Record<string, { block: string; entity?: string }> = {
 	"minecraft:water_bucket": { block: "minecraft:water" },
@@ -65,29 +185,32 @@ class GenerateItemTypesAction extends Action<[], void> {
 	constructor(
 		private readonly dataPath: string,
 		private readonly outputPath: string,
+		private readonly serverPath: string,
 	) {
 		super("generate-item-types");
 	}
 
 	async run(): Promise<void> {
-		const [componentsNbt, runtimeItems, mappings, itemTags] = await Promise.all(
-			[
-				nbt.parse(
-					await readFile(resolve(this.dataPath, "item_components.nbt")),
-					"big",
-				),
-				readFile(
-					resolve(this.dataPath, "runtime_item_states.json"),
-					"utf8",
-				).then((value) => JSON.parse(value) as RuntimeItem[]),
-				readFile(resolve(this.dataPath, "item_mappings.json"), "utf8").then(
-					(value) => JSON.parse(value) as ItemMappings,
-				),
-				readFile(resolve(dirname(this.outputPath), "item-tags.json"), "utf8")
-					.then((value) => JSON.parse(value) as ItemTag[])
-					.catch(() => []),
-			],
-		);
+		const [componentsNbt, runtimeItems, mappings, itemTags, catalogData] =
+			await Promise.all(
+				[
+					nbt.parse(
+						await readFile(resolve(this.dataPath, "item_components.nbt")),
+						"big",
+					),
+					readFile(
+						resolve(this.dataPath, "runtime_item_states.json"),
+						"utf8",
+					).then((value) => JSON.parse(value) as RuntimeItem[]),
+					readFile(resolve(this.dataPath, "item_mappings.json"), "utf8").then(
+						(value) => JSON.parse(value) as ItemMappings,
+					),
+					readFile(resolve(dirname(this.outputPath), "item-tags.json"), "utf8")
+						.then((value) => JSON.parse(value) as ItemTag[])
+						.catch(() => []),
+					readCatalogData(this.serverPath, this.dataPath),
+				],
+			);
 
 		const componentData = nbt.simplify(componentsNbt.parsed) as Record<
 			string,
@@ -153,6 +276,9 @@ class GenerateItemTypesAction extends Action<[], void> {
 
 			return {
 				identifier: item.name,
+				...(catalogData.entries.has(item.name)
+					? { catalog: catalogData.entries.get(item.name) }
+					: {}),
 				tags,
 				stackable: maxAmount > 1,
 				maxAmount,
@@ -173,6 +299,18 @@ class GenerateItemTypesAction extends Action<[], void> {
 						: {}),
 				},
 			};
+		});
+
+		const maxCatalogOrder = catalogData.order.size;
+		items.sort((left, right) => {
+			const leftOrder =
+				catalogData.order.get(left.identifier) ?? maxCatalogOrder;
+			const rightOrder =
+				catalogData.order.get(right.identifier) ?? maxCatalogOrder;
+
+			return leftOrder === rightOrder
+				? left.identifier.localeCompare(right.identifier)
+				: leftOrder - rightOrder;
 		});
 
 		await writeFile(this.outputPath, JSON.stringify(items, null, 2));
