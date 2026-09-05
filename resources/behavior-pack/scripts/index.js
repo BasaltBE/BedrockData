@@ -5,23 +5,22 @@ import { readBlockDrops } from "./block-drops.js"
 import { readItemTags } from "./item-tags.js"
 import { readEntityTypes } from "./entity-types.js"
 import { readEntityDrops } from "./entity-drops.js"
-import { dropMode, sendTags } from "./send.js"
+import { skipData, dropMode, sendTags } from "./send.js"
 
 console.warn("Tag behavior pack loaded")
 
 world.afterEvents.worldLoad.subscribe(() => {
   console.warn("Tag behavior pack world loaded")
 
-  try {
-    world.getDimension("overworld").runCommand("tickingarea add circle 0 -60 0 4 dump")
-  } catch (error) {
-    console.warn(`Tag dump setup failed: ${String(error)}`)
-  }
-
   system.runTimeout(async () => {
-    console.warn("Reading Bedrock block and item tags")
-
     try {
+      if (await skipData()) {
+        console.warn("Data generation is disabled")
+        return
+      }
+
+      world.getDimension("overworld").runCommand("tickingarea add circle 0 -60 0 4 dump")
+      console.warn("Reading Bedrock block and item tags")
       const dropsMode = await dropMode()
       const response = await sendTags({
         blockTags: readBlockTags(),

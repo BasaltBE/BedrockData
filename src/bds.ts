@@ -1,14 +1,14 @@
 import { resolve } from "node:path";
 
 import { DownloadAction } from "./actions/bds-download";
-import { GenerateDocsAction } from "./actions/generate-docs";
-import { GenerateBlockDropsAction } from "./actions/generate-block-drops";
-import { GenerateBlockTypesAction } from "./actions/generate-block-types";
-import { GenerateEntityTypesAction } from "./actions/generate-entity-types";
-import { GenerateEntityDropsAction } from "./actions/generate-entity-drops";
-import { GenerateEnchantmentTypesAction } from "./actions/generate-enchantment-types";
-import { GenerateTreeTypesAction } from "./actions/generate-tree-types";
-import { GenerateItemTypesAction } from "./actions/generate-item-types";
+import { GenerateDocsAction } from "./data/generate-docs";
+import { RunServerAction } from "./actions/run-server";
+import { GenerateBlockTypesAction } from "./data/generate-block-types";
+import { GenerateEntityTypesAction } from "./data/generate-entity-types";
+import { GenerateEntityDropsAction } from "./data/generate-entity-drops";
+import { GenerateEnchantmentTypesAction } from "./data/generate-enchantment-types";
+import { GenerateTreeTypesAction } from "./data/generate-tree-types";
+import { GenerateItemTypesAction } from "./data/generate-item-types";
 import { PrepareServerAction } from "./actions/prepare-server";
 import { BdsEvents } from "./events";
 
@@ -17,7 +17,7 @@ class Bds extends BdsEvents {
 		download: DownloadAction;
 		prepare: PrepareServerAction;
 		generateDocs: GenerateDocsAction;
-		generateBlockDrops: GenerateBlockDropsAction;
+		runServer: RunServerAction;
 		generateBlockTypes: GenerateBlockTypesAction;
 		generateEntityTypes: GenerateEntityTypesAction;
 		generateEntityDrops: GenerateEntityDropsAction;
@@ -48,7 +48,7 @@ class Bds extends BdsEvents {
 				resolve(resourcesPath, "behavior-pack"),
 			),
 			generateDocs: new GenerateDocsAction(this.serverPath),
-			generateBlockDrops: new GenerateBlockDropsAction(this.serverPath),
+			runServer: new RunServerAction(this.serverPath),
 			generateBlockTypes: new GenerateBlockTypesAction(
 				dataPath,
 				resolve(outputPath, "block-types.json"),

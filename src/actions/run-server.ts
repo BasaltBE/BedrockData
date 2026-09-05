@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 
 import { Action } from "../action";
 
-class GenerateBlockDropsAction extends Action<[], void> {
+class RunServerAction extends Action<[], void> {
 	constructor(private readonly serverPath: string) {
-		super("generate-block-drops");
+		super("run-server");
 	}
 
 	async run(stopRequested?: Promise<void>): Promise<void> {
@@ -30,7 +30,7 @@ class GenerateBlockDropsAction extends Action<[], void> {
 			let stopping = false;
 			const server = spawn(executablePath, [], {
 				cwd: this.serverPath,
-				stdio: ["pipe", "pipe", "pipe"],
+				stdio: [stopRequested ? "pipe" : "inherit", "pipe", "pipe"],
 			});
 			stopRequested?.then(() => {
 				stopping = true;
@@ -51,4 +51,4 @@ class GenerateBlockDropsAction extends Action<[], void> {
 	}
 }
 
-export { GenerateBlockDropsAction };
+export { RunServerAction };

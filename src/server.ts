@@ -6,45 +6,7 @@ import {
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-type TagsPayload = {
-	blockTags: Array<{
-		identifier: string;
-		tags: string[];
-	}>;
-	itemTags: Array<{
-		identifier: string;
-		tags: string[];
-	}>;
-	blockComponents?: Array<{
-		identifier: string;
-		components: Record<string, unknown>;
-	}>;
-	blockDrops?: Record<
-		string,
-		Record<
-			string,
-			Record<
-				string,
-				Array<{ identifier: string; minAmount: number; maxAmount: number }>
-			>
-		>
-	>;
-	entityDrops?: Record<
-		string,
-		Record<
-			string,
-			Record<
-				string,
-				Array<{ identifier: string; minAmount: number; maxAmount: number }>
-			>
-		>
-	>;
-	entityTypes?: Array<{
-		identifier: string;
-		components: string[];
-		families: string[];
-	}>;
-};
+import type { TagsPayload } from "./data/types/tags-payload";
 
 function readBody(request: IncomingMessage): Promise<string> {
 	return new Promise((resolveBody, rejectBody) => {
@@ -73,8 +35,14 @@ async function startServer(
 	port = 18080,
 	stopAfterDrops = false,
 	onDrops?: () => void,
+	skipData = false,
 ): Promise<ReturnType<typeof createServer>> {
 	const server = createServer(async (request, response) => {
+		if (request.method === "GET" && request.url === "/skip-data") {
+			sendResponse(response, 200, skipData ? "yes" : "no");
+			return;
+		}
+
 		if (request.method === "GET" && request.url === "/mode") {
 			sendResponse(response, stopAfterDrops ? 202 : 200, "ok");
 			return;
@@ -85,14 +53,13 @@ async function startServer(
 			return;
 		}
 
+		if (skipData) {
+			sendResponse(response, 403, "Data generation is disabled");
+			return;
+		}
+
 		try {
 			const payload = JSON.parse(await readBody(request)) as TagsPayload;
-			if (
-				!Array.isArray(payload.blockTags) ||
-				!Array.isArray(payload.itemTags)
-			) {
-				throw new Error("Invalid tags payload");
-			}
 
 			await mkdir(dataPath, { recursive: true });
 			await writeFile(

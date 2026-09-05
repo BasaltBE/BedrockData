@@ -1,5 +1,14 @@
 import { HttpRequest, HttpRequestMethod, http } from "@minecraft/server-net"
 
+async function skipData() {
+  const request = new HttpRequest("http://127.0.0.1:18080/skip-data")
+  request.setMethod(HttpRequestMethod.Get)
+  const response = await http.request(request)
+  if (response.status !== 200 || !["yes", "no"].includes(response.body))
+    throw new Error("Invalid data generation response")
+  return response.body === "yes"
+}
+
 async function dropMode() {
   const request = new HttpRequest("http://127.0.0.1:18080/mode")
   request.setMethod(HttpRequestMethod.Get)
@@ -15,4 +24,4 @@ function sendTags(payload) {
   return http.request(request)
 }
 
-export { dropMode, sendTags }
+export { skipData, dropMode, sendTags }
