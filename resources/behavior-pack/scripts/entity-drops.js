@@ -75,7 +75,7 @@ async function readEntityDrops() {
             maxAmount: value.maxAmount,
           }))
       }
-      result[type.id] = { diamond_sword: variants }
+      result[type.id] = variants
     } finally {
       entity.remove()
     }
