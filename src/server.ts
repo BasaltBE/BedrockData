@@ -23,7 +23,20 @@ type TagsPayload = {
 		string,
 		Record<
 			string,
-			Record<string, Array<{ identifier: string; amount: number }>>
+			Record<
+				string,
+				Array<{ identifier: string; minAmount: number; maxAmount: number }>
+			>
+		>
+	>;
+	entityDrops?: Record<
+		string,
+		Record<
+			string,
+			Record<
+				string,
+				Array<{ identifier: string; minAmount: number; maxAmount: number }>
+			>
 		>
 	>;
 	entityTypes?: Array<{
@@ -58,12 +71,12 @@ function sendResponse(
 async function startServer(
 	dataPath: string,
 	port = 18080,
-	stopAfterBlockDrops = false,
-	onBlockDrops?: () => void,
+	stopAfterDrops = false,
+	onDrops?: () => void,
 ): Promise<ReturnType<typeof createServer>> {
 	const server = createServer(async (request, response) => {
 		if (request.method === "GET" && request.url === "/mode") {
-			sendResponse(response, stopAfterBlockDrops ? 202 : 200, "ok");
+			sendResponse(response, stopAfterDrops ? 202 : 200, "ok");
 			return;
 		}
 
@@ -108,10 +121,18 @@ async function startServer(
 					JSON.stringify(payload.entityTypes, null, 2),
 				);
 			}
-			if (stopAfterBlockDrops && payload.blockDrops) onBlockDrops?.();
+			if (payload.entityDrops && typeof payload.entityDrops === "object") {
+				await writeFile(
+					resolve(dataPath, "entity-drops.json"),
+					JSON.stringify(payload.entityDrops, null, 2),
+				);
+			}
+			const dropsReady =
+				stopAfterDrops && payload.blockDrops && payload.entityDrops;
+			if (dropsReady) onDrops?.();
 			sendResponse(
 				response,
-				stopAfterBlockDrops && payload.blockDrops ? 202 : 200,
+				dropsReady ? 202 : 200,
 				"ok",
 			);
 			console.log(`Saved BDS data to ${dataPath}`);

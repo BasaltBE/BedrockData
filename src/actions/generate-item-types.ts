@@ -18,6 +18,8 @@ type RuntimeItem = {
 	id: number;
 	version: number;
 	componentBased: boolean;
+	components?: string[];
+	maxAmount?: number;
 };
 
 type ItemMappings = {
@@ -219,7 +221,7 @@ class GenerateItemTypesAction extends Action<[], void> {
 		const tagsByName = new Map(
 			itemTags.map((item) => [item.identifier, item.tags]),
 		);
-		const runtimeByName = new Map(
+		const observedByName = new Map(
 			itemTags.map((item) => [item.identifier, item]),
 		);
 		const aliases = new Map(
@@ -231,6 +233,7 @@ class GenerateItemTypesAction extends Action<[], void> {
 
 		const items = runtimeItems.map((item) => {
 			const data = componentData[item.name]?.components ?? {};
+			const observed = observedByName.get(item.name);
 			const itemProperties = data.item_properties as
 				| Record<string, unknown>
 				| undefined;
@@ -243,20 +246,24 @@ class GenerateItemTypesAction extends Action<[], void> {
 			const tags = [
 				...new Set([...(tagsByName.get(item.name) ?? []), ...nbtTags]),
 			];
-			const runtime = runtimeByName.get(item.name);
 			const bucketPlacer = bucketPlacers[item.name];
 			const spawnEggEntity = item.name.endsWith("_spawn_egg")
 				? (spawnEggAliases[item.name] ?? item.name.replace(/_spawn_egg$/, ""))
 				: undefined;
 			const maxAmount =
-				runtime?.maxAmount && runtime.maxAmount > 0
-					? runtime.maxAmount
+				item.maxAmount && item.maxAmount > 0
+					? item.maxAmount
+					: observed?.maxAmount && observed.maxAmount > 0
+						? observed.maxAmount
 					: typeof itemProperties?.max_stack_size === "number"
 						? itemProperties.max_stack_size
 						: bucketPlacer
 							? 1
 							: 64;
-			const liveComponents = runtime?.components ?? [];
+			const liveComponents = [
+				...(item.components ?? []),
+				...(observed?.components ?? []),
+			];
 			const derivedComponents = [
 				...(bucketPlacer
 					? [

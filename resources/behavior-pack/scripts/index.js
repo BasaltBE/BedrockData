@@ -4,6 +4,7 @@ import { readBlockComponents, readBlockTags } from "./block-tags.js"
 import { readBlockDrops } from "./block-drops.js"
 import { readItemTags } from "./item-tags.js"
 import { readEntityTypes } from "./entity-types.js"
+import { readEntityDrops } from "./entity-drops.js"
 import { dropMode, sendTags } from "./send.js"
 
 console.warn("Tag behavior pack loaded")
@@ -25,7 +26,10 @@ world.afterEvents.worldLoad.subscribe(() => {
       const response = await sendTags({
         blockTags: readBlockTags(),
         blockComponents: readBlockComponents(),
-        ...(dropsMode ? { blockDrops: await readBlockDrops() } : {}),
+        ...(dropsMode ? {
+          blockDrops: await readBlockDrops(),
+          entityDrops: await readEntityDrops(),
+        } : {}),
         itemTags: readItemTags(),
         entityTypes: readEntityTypes(),
       })
