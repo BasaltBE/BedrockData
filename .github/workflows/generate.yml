@@ -34,7 +34,7 @@ jobs:
         run: bun run check
 
       - name: Generate data
-        run: bun run start
+        run: bun run start --preview
 
       - name: Create output archive
         shell: pwsh
