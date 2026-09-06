@@ -10,6 +10,7 @@ import { GenerateEnchantmentTypesAction } from "./data/generate-enchantment-type
 import { GenerateTreeTypesAction } from "./data/generate-tree-types";
 import { GenerateItemTypesAction } from "./data/generate-item-types";
 import { PrepareServerAction } from "./actions/prepare-server";
+import { ParseAction } from "./protocol/actions/parse";
 import { BdsEvents } from "./events";
 
 class Bds extends BdsEvents {
@@ -24,6 +25,7 @@ class Bds extends BdsEvents {
 		generateEnchantmentTypes: GenerateEnchantmentTypesAction;
 		generateTreeTypes: GenerateTreeTypesAction;
 		generateItemTypes: GenerateItemTypesAction;
+		parse: ParseAction;
 	};
 
 	constructor(
@@ -74,6 +76,10 @@ class Bds extends BdsEvents {
 				dataPath,
 				resolve(outputPath, "item-types.json"),
 				this.serverPath,
+			),
+			parse: new ParseAction(
+				resolve(this.serverPath, "docs", "json_schemas", "protocol"),
+				resolve(outputPath, "protocol"),
 			),
 		};
 	}

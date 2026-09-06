@@ -1,5 +1,3 @@
-.old
-.temp
-.vscode
+.*/
 node_modules
 bun.lock

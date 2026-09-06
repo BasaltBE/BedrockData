@@ -1,0 +1,14 @@
+{
+  "Target Runtime ID": "ActorRuntimeId",
+  "Event ID": "EventId",
+  "Actor ID": "ActorId",
+  "Action": "ActionType",
+  "Target Actor Runtime ID": "EntityRuntimeId",
+  "Enum Data": "Enums",
+  "Chained Subcommand Data": "ChainedSubcommands",
+  "Block Position": "Position",
+  "Actor Data Tags": "ActorData",
+  "Dimension ID": "DimensionId",
+  "Is cache supported": "CacheSupported",
+  "UUID": "Uuid"
+}
