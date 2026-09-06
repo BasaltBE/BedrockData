@@ -21,9 +21,7 @@ class ParseAction extends Action<[], void> {
 			),
 		);
 		try {
-			// @ts-expect-error: Property 'dir' does not exist on type 'ImportMeta'.ts(2339)
 			this.names = JSON.parse(await readFile(resolve(import.meta.dir, "..", "..", "..", "resources", "names.json"), "utf8"));
-			// @ts-expect-error: Property 'dir' does not exist on type 'ImportMeta'.ts(2339)
 			this.types = JSON.parse(await readFile(resolve(import.meta.dir, "..", "..", "..", "resources", "types.json"), "utf8"));
 		} catch { }
 		const files = await readdir(this.protocolPath, { withFileTypes: true });
