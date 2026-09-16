@@ -1,4 +1,4 @@
-import { copyFile, mkdir, stat } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Bds } from "./bds";
@@ -32,30 +32,19 @@ bds.on("downloadCompleted", () => {
 try {
 	await bds.actions.download.run(preview);
 	await bds.actions.prepare.run();
+	console.log("Generating BDS documentation...");
+	await bds.actions.generateDocs.run();
+	await bds.actions.parse.run();
+	await new Promise<void>((resolveServer, rejectServer) =>
+		server.close((error) =>
+			error ? rejectServer(error) : resolveServer(),
+		),
+	);
+	serverClosed = true;
 	if (skipData) {
-		const docsPath = resolve(bds.serverPath, "docs");
-		let docsExist = false;
-		try {
-			docsExist = (await stat(docsPath)).isDirectory();
-		} catch {}
-
-		if (docsExist) {
-			console.log("Data generation is disabled + docs found.");
-			await bds.actions.parse.run();
-		} else {
-			console.log("Data generation is disabled. Starting BDS...");
-			await bds.actions.runServer.run();
-		}
+		console.log("Data generation is disabled.");
+		await bds.actions.generateSoundIdentifiers.run();
 	} else {
-		console.log("Generating BDS documentation...");
-		await bds.actions.generateDocs.run();
-		await bds.actions.parse.run();
-		await new Promise<void>((resolveServer, rejectServer) =>
-			server.close((error) =>
-				error ? rejectServer(error) : resolveServer(),
-			),
-		);
-		serverClosed = true;
 		let resolveDrops: (() => void) | undefined;
 		const dropsReady = new Promise<void>((resolveReady) => {
 			resolveDrops = resolveReady;
@@ -87,6 +76,7 @@ try {
 		await bds.actions.generateEnchantmentTypes.run();
 		await bds.actions.generateTreeTypes.run();
 		await bds.actions.generateItemTypes.run();
+		await bds.actions.generateSoundIdentifiers.run();
 	}
 } finally {
 	if (!serverClosed) server.close();

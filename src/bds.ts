@@ -12,6 +12,7 @@ import { GenerateItemTypesAction } from "./data/generate-item-types";
 import { PrepareServerAction } from "./actions/prepare-server";
 import { ParseAction } from "./protocol/actions/parse";
 import { BdsEvents } from "./events";
+import { GenerateSoundIdentifiersAction } from "./data/generate-sound-identifiers";
 
 class Bds extends BdsEvents {
 	readonly actions: {
@@ -25,6 +26,7 @@ class Bds extends BdsEvents {
 		generateEnchantmentTypes: GenerateEnchantmentTypesAction;
 		generateTreeTypes: GenerateTreeTypesAction;
 		generateItemTypes: GenerateItemTypesAction;
+		generateSoundIdentifiers: GenerateSoundIdentifiersAction;
 		parse: ParseAction;
 	};
 
@@ -76,6 +78,10 @@ class Bds extends BdsEvents {
 				dataPath,
 				resolve(outputPath, "item-types.json"),
 				this.serverPath,
+			),
+			generateSoundIdentifiers: new GenerateSoundIdentifiersAction(
+				this.serverPath,
+				resolve(outputPath, "sound-identifiers.json"),
 			),
 			parse: new ParseAction(
 				resolve(this.serverPath, "docs", "json_schemas", "protocol"),

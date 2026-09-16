@@ -173,7 +173,7 @@ class GenerateEntityTypesAction extends Action<[], void> {
 			"entities",
 		);
 
-		for (const fileName of await readdir(entityDirectory)) {
+		for (const fileName of await readdir(entityDirectory).catch(() => [])) {
 			if (!fileName.endsWith(".json")) continue;
 			const file = parseJsonc(
 				await readFile(resolve(entityDirectory, fileName), "utf8"),
