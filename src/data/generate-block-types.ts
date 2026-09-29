@@ -94,9 +94,9 @@ class GenerateBlockTypesAction extends Action<[], void> {
 			readFile(resolve(this.dataPath, "blocks.json"), "utf8").then(
 				(value) => JSON.parse(value) as BlockData[],
 			),
-			readFile(resolve(this.dataPath, "block_attributes.json"), "utf8").then(
-				(value) => JSON.parse(value) as Array<Record<string, unknown>>,
-			),
+			readFile(resolve(this.dataPath, "block_attributes.json"), "utf8")
+				.then((value) => JSON.parse(value) as Array<Record<string, unknown>>)
+				.catch(() => []),
 			readFile(resolve(this.dataPath, "block_properties.json"), "utf8")
 				.then((value) => JSON.parse(value) as BlockProperties[])
 				.catch(() => []),
