@@ -1,9 +1,10 @@
-import { copyFile, mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { Bds } from "./bds";
 import { CloudburstAction } from "./data/cloudburst";
 import { startServer } from "./server";
+import { formatJson } from "./data/format-json";
 
 const temporaryPath = resolve(import.meta.dir, "..", ".temp");
 const bds = new Bds(resolve(temporaryPath, "server"));
@@ -66,9 +67,16 @@ try {
 		}
 		await cloudburst.run();
 		await mkdir(resolve(temporaryPath, "output"), { recursive: true });
-		await copyFile(
-			resolve(temporaryPath, "data", "recipes.json"),
+		await writeFile(
 			resolve(temporaryPath, "output", "recipes.json"),
+			formatJson(
+				JSON.parse(
+					await readFile(
+						resolve(temporaryPath, "data", "recipes.json"),
+						"utf8",
+					),
+				),
+			),
 		);
 		await bds.actions.generateBlockTypes.run();
 		await bds.actions.generateEntityTypes.run();

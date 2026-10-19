@@ -7,6 +7,89 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type { TagsPayload } from "./data/types/tags-payload";
+import type { BlockDrops } from "./data/types/block-drops";
+import type { Drops } from "./data/types/drops";
+import type {
+	EntityDrops,
+	EntityDropsData,
+} from "./data/types/entity-drops";
+
+function compressBlockDrops(drops: Drops): BlockDrops {
+	const tools = [...new Set(Object.values(drops).flatMap(Object.keys))].sort();
+	const variants = [
+		...new Set(
+			Object.values(drops).flatMap((tools) =>
+				Object.values(tools).flatMap(Object.keys),
+			),
+		),
+	];
+	const dropSets: BlockDrops["dropSets"] = [[]];
+	const dropSetIds = new Map([["[]", 0]]);
+	const blocks: BlockDrops["blocks"] = [];
+
+	for (const [identifier, blockDrops] of Object.entries(drops)) {
+		const ids: number[] = [];
+
+		for (const tool of tools) {
+			for (const variant of variants) {
+				const dropSet = blockDrops[tool]?.[variant];
+				if (dropSet === undefined) {
+					ids.push(-1);
+					continue;
+				}
+
+				const key = JSON.stringify(dropSet);
+				let id = dropSetIds.get(key);
+				if (id === undefined) {
+					id = dropSets.length;
+					dropSetIds.set(key, id);
+					dropSets.push(dropSet);
+				}
+				ids.push(id);
+			}
+		}
+
+		blocks.push({ identifier, dropSetIds: ids });
+	}
+
+	return { tools, variants, dropSets, blocks };
+}
+
+function compressEntityDrops(drops: EntityDropsData): EntityDrops {
+	const variants = [
+		...new Set(
+			Object.values(drops).flatMap(Object.keys),
+		),
+	];
+	const dropSets: EntityDrops["dropSets"] = [[]];
+	const dropSetIds = new Map([[JSON.stringify([]), 0]]);
+	const entities: EntityDrops["entities"] = [];
+
+	for (const [identifier, entityDrops] of Object.entries(drops)) {
+		const ids: number[] = [];
+
+		for (const variant of variants) {
+			const dropSet = entityDrops[variant];
+			if (dropSet === undefined) {
+				ids.push(-1);
+				continue;
+			}
+
+			const key = JSON.stringify(dropSet);
+			let id = dropSetIds.get(key);
+			if (id === undefined) {
+				id = dropSets.length;
+				dropSetIds.set(key, id);
+				dropSets.push(dropSet);
+			}
+			ids.push(id);
+		}
+
+		entities.push({ identifier, dropSetIds: ids });
+	}
+
+	return { variants, dropSets, entities };
+}
 
 function readBody(request: IncomingMessage): Promise<string> {
 	return new Promise((resolveBody, rejectBody) => {
@@ -79,7 +162,7 @@ async function startServer(
 			if (payload.blockDrops && typeof payload.blockDrops === "object") {
 				await writeFile(
 					resolve(dataPath, "block-drops.json"),
-					JSON.stringify(payload.blockDrops, null, 2),
+					JSON.stringify(compressBlockDrops(payload.blockDrops)),
 				);
 			}
 			if (Array.isArray(payload.entityTypes)) {
@@ -91,7 +174,7 @@ async function startServer(
 			if (payload.entityDrops && typeof payload.entityDrops === "object") {
 				await writeFile(
 					resolve(dataPath, "entity-drops.json"),
-					JSON.stringify(payload.entityDrops, null, 2),
+					JSON.stringify(compressEntityDrops(payload.entityDrops)),
 				);
 			}
 			const dropsReady =
